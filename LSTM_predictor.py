@@ -10,9 +10,11 @@ import math
 from torch.utils.data import DataLoader, TensorDataset
 
 from helper import crop_datetime, extract_signal_and_anomaly_array
+
 MODEL_PATH = 'model_LSTM_predictor.pth'
-DATA_PATH = '../ESA-Mission1/channel_44.csv'
-TRAINED_MODEL_PATH = 'model_LSTM_predictor.pth'
+DATA_PATH = 'DRIVE/MyDrive/ESA-AD_data/channel_44.csv'
+TRAINED_MODEL_PATH = 'DRIVE/MyDrive/ESA-AD_data/model_LSTM_predictor.pth'
+MODEL_STATE_DICT_PATH = 'DRIVE/MyDrive/ESA-AD_data/model_LSTM_predictor_state_dict.pth'
 CHANNEL = "channel_44"
 WINDOW_SIZE = 1000
 PRED_SIZE = 100  # how many future steps to predict
@@ -20,6 +22,8 @@ STEP = 10  # slide step
 BATCH_SIZE = 128
 LEARNING_RATE = 1e-3
 EPOCHS = 20
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def main():
     #df = get_scaled_data_values("esa_data_my_csvs/channel_37.csv", CHANNEL)
@@ -71,6 +75,20 @@ def main():
 
 def main_eval():
     trained_model = torch.load(TRAINED_MODEL_PATH, weights_only=False, map_location=torch.device('cpu'))
+
+    # Recreate your model architecture
+    trained_model = LSTMPredictor(
+        input_size=1,
+        hidden_size=128,
+        num_layers=3,
+        pred_len=PRED_SIZE,
+        dropout=0.3
+    )
+
+    # Load weights
+    trained_model.load_state_dict(torch.load(MODEL_STATE_DICT_PATH, map_location="cpu"))
+
+    trained_model=trained_model.to(DEVICE)
 
     df = pd.read_csv(DATA_PATH)
 
